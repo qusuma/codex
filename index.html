@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speed Check App</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #ffffff;
+      --card: #2563eb;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #1d4ed8;
+      --ok: #16a34a;
+      --warn: #d97706;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(760px, 100%);
+      background: #ffffff;
+      border: 1px solid rgba(37, 99, 235, 0.25);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+    }
+
+    h1 { margin: 0 0 6px; font-size: clamp(1.5rem, 2.8vw, 2.1rem); }
+    p { margin: 0; color: var(--muted); }
+
+    .actions {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 11px 18px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #eff6ff;
+      background: linear-gradient(120deg, #3b82f6, #1d4ed8);
+      transition: transform .12s ease;
+    }
+    button:hover:not(:disabled) { transform: translateY(-1px); }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+
+    .status { color: var(--warn); font-size: .95rem; }
+
+    .grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      background: color-mix(in oklab, var(--card) 85%, white 15%);
+      border: 1px solid rgba(255, 255, 255, .3);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .metric h2 {
+      margin: 0;
+      font-size: .95rem;
+      color: #dbeafe;
+      font-weight: 500;
+    }
+
+    .value {
+      margin-top: 10px;
+      font-size: clamp(1.35rem, 3vw, 2rem);
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .small {
+      margin-top: 14px;
+      font-size: .85rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    code {
+      background: #dbeafe;
+      padding: .12rem .35rem;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>Upload & Download Speed Checker</h1>
+    <p>Run a quick browser-based network test directly from this page.</p>
+
+    <div class="actions">
+      <button id="runBtn">Run Speed Test</button>
+      <span id="status" class="status">Idle</span>
+    </div>
+
+    <section class="grid" aria-live="polite">
+      <article class="metric">
+        <h2>Download</h2>
+        <div id="download" class="value">-- Mbps</div>
+      </article>
+      <article class="metric">
+        <h2>Upload</h2>
+        <div id="upload" class="value">-- Mbps</div>
+      </article>
+      <article class="metric">
+        <h2>Ping</h2>
+        <div id="ping" class="value">-- ms</div>
+      </article>
+    </section>
+
+    <p class="small">
+      Endpoints used: <code>https://speed.cloudflare.com/__down</code> and
+      <code>https://speed.cloudflare.com/__up</code>. Results can vary by browser,
+      network conditions, and endpoint availability.
+    </p>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const runBtn = $('runBtn');
+    const statusEl = $('status');
+    const downloadEl = $('download');
+    const uploadEl = $('upload');
+    const pingEl = $('ping');
+
+    const formatMbps = (value) => `${value.toFixed(2)} Mbps`;
+
+    async function measurePing(url, rounds = 4) {
+      let total = 0;
+      let completed = 0;
+      for (let i = 0; i < rounds; i++) {
+        const start = performance.now();
+        await fetch(`${url}?cache=${Math.random()}`, { cache: 'no-store', mode: 'cors' });
+        total += performance.now() - start;
+        completed++;
+      }
+      return total / completed;
+    }
+
+    async function measureDownload() {
+      const bytes = 10 * 1024 * 1024;
+      const url = `https://speed.cloudflare.com/__down?bytes=${bytes}&cache=${Math.random()}`;
+      const start = performance.now();
+      const response = await fetch(url, { cache: 'no-store', mode: 'cors' });
+      const blob = await response.blob();
+      const seconds = (performance.now() - start) / 1000;
+      const bits = blob.size * 8;
+      return (bits / seconds) / 1_000_000;
+    }
+
+    async function measureUpload() {
+      const bytes = 5 * 1024 * 1024;
+      const payload = new Blob([new Uint8Array(bytes)], { type: 'application/octet-stream' });
+      const start = performance.now();
+      await fetch('https://speed.cloudflare.com/__up', {
+        method: 'POST',
+        mode: 'cors',
+        cache: 'no-store',
+        body: payload,
+      });
+      const seconds = (performance.now() - start) / 1000;
+      const bits = bytes * 8;
+      return (bits / seconds) / 1_000_000;
+    }
+
+    async function runTest() {
+      runBtn.disabled = true;
+      statusEl.textContent = 'Testing ping…';
+
+      try {
+        const ping = await measurePing('https://speed.cloudflare.com/cdn-cgi/trace');
+        pingEl.textContent = `${ping.toFixed(1)} ms`;
+
+        statusEl.textContent = 'Testing download…';
+        const down = await measureDownload();
+        downloadEl.textContent = formatMbps(down);
+
+        statusEl.textContent = 'Testing upload…';
+        const up = await measureUpload();
+        uploadEl.textContent = formatMbps(up);
+
+        statusEl.textContent = 'Done';
+        statusEl.style.color = 'var(--ok)';
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = 'Test failed. Check internet/CORS support and retry.';
+        statusEl.style.color = '#fca5a5';
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+
+    runBtn.addEventListener('click', runTest);
+  </script>
+</body>
+</html>
