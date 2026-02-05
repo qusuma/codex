@@ -6,14 +6,14 @@
   <title>Speed Check App</title>
   <style>
     :root {
-      color-scheme: light dark;
-      --bg: #0f172a;
-      --card: #111827;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --accent: #22d3ee;
-      --ok: #34d399;
-      --warn: #f59e0b;
+      color-scheme: light;
+      --bg: #ffffff;
+      --card: #2563eb;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #1d4ed8;
+      --ok: #16a34a;
+      --warn: #d97706;
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
 
@@ -22,7 +22,7 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 50%);
+      background: var(--bg);
       color: var(--text);
       display: grid;
       place-items: center;
@@ -31,8 +31,8 @@
 
     .app {
       width: min(760px, 100%);
-      background: color-mix(in oklab, var(--card) 92%, black 8%);
-      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: #ffffff;
+      border: 1px solid rgba(37, 99, 235, 0.25);
       border-radius: 18px;
       padding: 24px;
       box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
@@ -55,8 +55,8 @@
       padding: 11px 18px;
       font-weight: 600;
       cursor: pointer;
-      color: #082f49;
-      background: linear-gradient(120deg, #67e8f9, #22d3ee);
+      color: #eff6ff;
+      background: linear-gradient(120deg, #3b82f6, #1d4ed8);
       transition: transform .12s ease;
     }
     button:hover:not(:disabled) { transform: translateY(-1px); }
@@ -72,8 +72,8 @@
     }
 
     .metric {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(148, 163, 184, .25);
+      background: color-mix(in oklab, var(--card) 85%, white 15%);
+      border: 1px solid rgba(255, 255, 255, .3);
       border-radius: 14px;
       padding: 14px;
     }
@@ -81,7 +81,7 @@
     .metric h2 {
       margin: 0;
       font-size: .95rem;
-      color: var(--muted);
+      color: #dbeafe;
       font-weight: 500;
     }
 
@@ -89,7 +89,7 @@
       margin-top: 10px;
       font-size: clamp(1.35rem, 3vw, 2rem);
       font-weight: 700;
-      color: var(--ok);
+      color: #ffffff;
     }
 
     .small {
@@ -100,7 +100,7 @@
     }
 
     code {
-      background: rgba(51, 65, 85, 0.5);
+      background: #dbeafe;
       padding: .12rem .35rem;
       border-radius: 6px;
     }
